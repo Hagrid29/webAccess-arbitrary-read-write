@@ -9,19 +9,29 @@ A practice of reverse engineering on old version (8.0) of Advantech WebAccess.
 # Arbitrary File Write
 WebAccess handle Op Code and if there is no match, it will pass the Op Code to `DrawSrv.dll` at `webvrpcs+0x478F`. 
 <img src="img/Fig1.png" width="300">
+
 There are switches allow me to call `_fsopen`, `fwrite` and `fclose`.
 
 ## \_fsopen (0x2779)
 ### Calculate Op Code
 Target function was call at `loc_2584`
+
 <img src="img/Fig2.png" width="300">
+
 We need to make sure the value of `EAX` can lead us to `loc_2584`
+
 <img src="img/Fig3.png" width="300">
+
 Inspect jump table `jpt_2266`. Target function `loc_10002584` is at offset 0x44 from the top. Therefore `ECX` need to be value 0x11
+
 <img src="img/Fig4.png" width="300">
+
 Inspect byte table `byte_2FE0`. Value 0x11 is at offset 0x69 from the top. Therefore `EAX` need to be value 0x69
+
 <img src="img/Fig5.png" width="300">
+
 `EAX` = Op Code (i.e., `EDX`) - 0x2710. Therefore, Op Code is 0x2779
+
 <img src="img/Fig6.png" width="300">
 
 ### Parameters
@@ -47,6 +57,7 @@ print(''.join('{:02x}'.format(x) for x in fstream))
 
 ## fwrite (0x277d)
 <img src="img/Fig7.png" width="300">
+
 `fwrite` takes 4 parameters while the value of `stream` is obtained from `fopen`.
 We can control the value of `size` and `count` of `fwrite` call. Thus, we can write the value on stack to target file if our buffer size is smaller then the total number of elements determined by parameter `size` and `count`.
 
@@ -82,7 +93,7 @@ print(res)
 
 
 # Arbitrary File Read (0x283c)
-This is a bit tricky because it require luck to leak the memory.
+This is a bit tricky because it requires luck to leak the memory.
 
 ## Observation
 It was observed that Op Code 0x283c will first call `FindFirstFileA`. If the call success, it will send buffer of previous call to client at offset 0x260 which is determine by `msf-pattern`
@@ -114,18 +125,29 @@ The flow is like: 0x283c > `sub_3920` > `sub_3750` > `sub_3610` > `call dword_62
 ## Detailed Walkthrough
 
 It was observed that at function `sub_39B0` call `CopyFileA` if 3rd parameter (i.e., `ebp`) is not 0x0. However, I cannot control the value of 3rd parameter. But still, the 3rd parameter will vary upon each call. Therefore, we can call it multiple times until the value is not 0x0.
+
 <img src="img/Fig9.png" width="600">
 <img src="img/Fig10.png" width="3000">
+
 Once we are able to call `CopyFileA` against our target file, the content of target file is written to heap. The more we call, the more  heap memory got written with file content.
+
 <img src="img/Fig11.png" width="3000">
-Later at `drawsrv+0x37A7`, the application copy buffer at `ESI` to `EDI` with `ECX` times (i.e., `rep movsd`). `EDI` is pointing to address that near current stack address while ESI is our buffer that located at heap. 
+
+Later at `drawsrv+0x37A7`, the application copy buffer at `ESI` to `EDI` with `ECX` times (i.e., `rep movsd`). `EDI` is pointing to address that near current stack address while `ESI` is our buffer that located at heap. 
+
 <img src="img/Fig12.png" width="300">
 <img src="img/Fig13.png" width="600">
+
 After hundreds of run, `CopyFileA` overwrite the buffer at `ESI` with file content and eventually overwrite stack.
+
 <img src="img/Fig14.png" width="600">
+
 Later at `drawsrv+0x37DA`, `EDX` store the address of `ESP+0x10` which is pointing to file content that written on stack. `EDX` is passed to function `sub_3610` as 3rd parameter and then pass to `webvrpcs+0x3140` as 3rd parameter.
+
 <img src="img/Fig15.png" width="300">
-`webvrpcs+0x3140` will send the buffer which contain file content to client at the end
+
+`webvrpcs+0x3140` will send the buffer which contain file content to client at the end.
+
 <img src="img/Fig16.png" width="300">
 <img src="img/Fig17.png" width="300">
 <img src="img/Fig18.png" width="900">
