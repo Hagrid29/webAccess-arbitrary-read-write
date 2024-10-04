@@ -2,8 +2,8 @@
 
 A practice of reverse engineering on old version (8.0) of Advantech WebAccess.
 
-- [Arbitrary File Write](https://github.com/Hagrid29/WebAccess-arbitrary-read-write#arbitrary-file-write) 
-- [Arbitrary File Read](https://github.com/Hagrid29/WebAccess-arbitrary-read-write#arbitrary-file-read) 
+- [Arbitrary File Write](https://github.com/Hagrid29/WebAccess-arbitrary-read-write?tab=readme-ov-file#arbitrary-file-write) 
+- [Arbitrary File Read](https://github.com/Hagrid29/WebAccess-arbitrary-read-write?tab=readme-ov-file#arbitrary-file-read-0x283c) 
 
 
 # Arbitrary File Write
